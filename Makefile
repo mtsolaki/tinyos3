@@ -1,4 +1,4 @@
-#test github
+#test github laptop
 ifndef DEBUG
 # Default: compile for debug
 DEBUG=1
