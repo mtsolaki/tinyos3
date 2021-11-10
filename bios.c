@@ -18,6 +18,7 @@
 #include "util.h"
 #include "bios.h"
 
+// Simple comment
 /*
 	Implementation of bios.h API
 
