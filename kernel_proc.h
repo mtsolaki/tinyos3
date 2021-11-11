@@ -65,7 +65,7 @@ typedef struct process_control_block {
 
 } PCB;
 
-typedef struct process_control_block {
+typedef struct process_thread_control_block {
   TCB* tcb;
   
   Task task;
