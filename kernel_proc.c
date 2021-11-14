@@ -43,10 +43,23 @@ static inline void initialize_PCB(PCB* pcb)
   rlnode_init(& pcb->exited_list, NULL);
   rlnode_init(& pcb->children_node, pcb);
   rlnode_init(& pcb->exited_node, pcb);
+  rlnode_init(&pcb->ptcb_list, NULL);
   pcb->child_exit = COND_INIT;
 }
 
+/* Initialize a PTCB */
+static inline void initialize_PTCB(PTCB* ptcb, PCB* pcb)
+{ 
+  ptcb->exited = 0;
+  ptcb->detached = 0;
+  ptcb->exitval = 0;
+  ptcb->refcount = 0;
+  ptcb->argl =0;
+  ptcb->args = NULL;
+  rlnode_init(& ptcb->ptcb_node_list, ptcb);
+  
 
+}
 static PCB* pcb_freelist;
 
 void initialize_processes()
@@ -131,10 +144,12 @@ void start_main_thread()
 Pid_t sys_Exec(Task call, int argl, void* args)
 {
   PCB *curproc, *newproc;
-  
+  PTCB* new_ptcb = (PTCB*)malloc(sizeof(PTCB));
+ 
   /* The new process PCB */
   newproc = acquire_PCB();
 
+  initialize_PTCB(new_ptcb, newproc);
   if(newproc == NULL) goto finish;  /* We have run out of PIDs! */
 
   if(get_pid(newproc)<=1) {
@@ -161,16 +176,26 @@ Pid_t sys_Exec(Task call, int argl, void* args)
 
 
   /* Set the main thread's function */
+  new_ptcb->task = call;
   newproc->main_task = call;
 
   /* Copy the arguments to new storage, owned by the new process */
   newproc->argl = argl;
+  new_ptcb->argl = argl;
+
   if(args!=NULL) {
+    
     newproc->args = malloc(argl);
     memcpy(newproc->args, args, argl);
+    new_ptcb->args = malloc(argl);
+    memcpy(new_ptcb->args, args, argl);
   }
   else
+  {
     newproc->args=NULL;
+    new_ptcb->args = NULL;
+  }
+    
 
   /* 
     Create and wake up the thread for the main function. This must be the last thing
@@ -178,11 +203,13 @@ Pid_t sys_Exec(Task call, int argl, void* args)
     the initialization of the PCB.
    */
   if(call != NULL) {
-    newproc->main_thread = spawn_thread(newproc, start_main_thread);
-    wakeup(newproc->main_thread);
+    new_ptcb->tcb = spawn_thread(newproc,new_ptcb, start_main_thread);
+    wakeup(new_ptcb->tcb);
   }
 
-
+  rlist_push_back(& newproc->ptcb_list, &new_ptcb->ptcb_node_list);
+  newproc->thread_count +=1;
+  
 finish:
   return get_pid(newproc);
 }
