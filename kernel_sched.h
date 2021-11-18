@@ -181,7 +181,8 @@ TCB* cur_thread();
   i.e., the thread currently executing on this core.
 */
 #define CURPROC (cur_thread()->owner_pcb)
-
+ 
+#define CURPTCB (cur_thread()->owner_ptcb)
 /**
   @brief A timeout constant, denoting no timeout for sleep.
 */

@@ -78,6 +78,9 @@ typedef struct process_thread_control_block {
   int detached;
   CondVar exit_cv;
   
+  CondVar joinned;
+  CondVar exited_first;
+  
   int refcount;
 
   rlnode ptcb_node_list;

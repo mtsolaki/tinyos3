@@ -56,6 +56,8 @@ static inline void initialize_PTCB(PTCB* ptcb, PCB* pcb)
   ptcb->refcount = 0;
   ptcb->argl =0;
   ptcb->args = NULL;
+  ptcb->joinned = COND_INIT;
+  ptcb->exited_first = COND_INIT;
   rlnode_init(& ptcb->ptcb_node_list, ptcb);
   
 
@@ -316,6 +318,7 @@ void sys_Exit(int exitval)
 {
 
   PCB *curproc = CURPROC;  /* cache for efficiency */
+  PTCB *curptcb = CURPTCB;
 
   /* First, store the exit status */
   curproc->exitval = exitval;
@@ -329,6 +332,28 @@ void sys_Exit(int exitval)
     while(sys_WaitChild(NOPROC,NULL)!=NOPROC);
 
   } else {
+
+    // Set exit value and status
+    curptcb->exited = 1;
+    curptcb->exitval = exitval;
+
+    // Move ptcb to exited list
+    assert(curptcb->exited == 1);
+    
+    rlnode* node = rlist_remove(&curptcb->ptcb_node_list);
+    rlist_push_front(& curproc->ptcb_list,node);
+
+    // Broadcast 
+    if (curptcb->detached == 0)
+    {
+      kernel_broadcast(& curptcb->joinned);
+    }
+
+    // wait all threads exit
+    while(!is_rlist_empty(& curproc->ptcb_list))
+    {
+      ; // to-do
+    }
 
     /* Reparent any children of the exiting process to the 
        initial task */
@@ -364,6 +389,11 @@ void sys_Exit(int exitval)
   if(curproc->args) {
     free(curproc->args);
     curproc->args = NULL;
+  }
+  if(curptcb->args)
+  {
+    free(curptcb->args);
+    curptcb->args = NULL;
   }
 
   /* Clean up FIDT */
