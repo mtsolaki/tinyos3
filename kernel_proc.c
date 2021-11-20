@@ -3,7 +3,7 @@
 #include "kernel_cc.h"
 #include "kernel_proc.h"
 #include "kernel_streams.h"
-
+#include "kernel_sched.h"
 
 /* 
  The process table and related system calls:
@@ -139,6 +139,28 @@ void start_main_thread()
 
   exitval = call(argl,args);
   Exit(exitval);
+}
+
+/*
+	This function is provided as an argument to spawn,
+	to execute a thread of a process.
+*/
+void init_thread()
+{
+  int exitval;
+
+  TCB* tcb = cur_thread();
+  PTCB* ptcb = tcb->owner_ptcb;
+
+  //assert(ptcb != NULL);
+  
+  Task call = ptcb->task;
+  int argl = ptcb->argl;
+  void* args = ptcb->args;
+
+  exitval = call(argl, args);
+
+  ThreadExit(exitval);
 }
 
 
