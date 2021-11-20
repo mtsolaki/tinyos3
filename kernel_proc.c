@@ -145,23 +145,6 @@ void start_main_thread()
 	This function is provided as an argument to spawn,
 	to execute a thread of a process.
 */
-void init_thread()
-{
-  int exitval;
-
-  TCB* tcb = cur_thread();
-  PTCB* ptcb = tcb->owner_ptcb;
-
-  //assert(ptcb != NULL);
-  
-  Task call = ptcb->task;
-  int argl = ptcb->argl;
-  void* args = ptcb->args;
-
-  exitval = call(argl, args);
-
-  ThreadExit(exitval);
-}
 
 
 /*
