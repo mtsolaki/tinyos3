@@ -43,7 +43,10 @@ static inline void initialize_PCB(PCB* pcb)
   rlnode_init(& pcb->exited_list, NULL);
   rlnode_init(& pcb->children_node, pcb);
   rlnode_init(& pcb->exited_node, pcb);
-  rlnode_init(&pcb->ptcb_list, NULL);
+
+  rlnode_init(&pcb->ptcb_list, NULL); //init ptcb list
+  pcb->thread_count = 0;
+
   pcb->child_exit = COND_INIT;
 }
 
@@ -56,9 +59,8 @@ static inline void initialize_PTCB(PTCB* ptcb, PCB* pcb)
   ptcb->refcount = 0;
   ptcb->argl =0;
   ptcb->args = NULL;
-  ptcb->joinned = COND_INIT;
-  ptcb->exited_first = COND_INIT;
-  rlnode_init(& ptcb->ptcb_node_list, ptcb);
+
+  rlnode_init(& ptcb->ptcb_list_node, ptcb);
   
 
 }
@@ -146,7 +148,7 @@ void start_main_thread()
 Pid_t sys_Exec(Task call, int argl, void* args)
 {
   PCB *curproc, *newproc;
-  PTCB* new_ptcb = (PTCB*)malloc(sizeof(PTCB));
+  PTCB* new_ptcb = (PTCB*)xmalloc(sizeof(PTCB));
  
   /* The new process PCB */
   newproc = acquire_PCB();
@@ -205,12 +207,25 @@ Pid_t sys_Exec(Task call, int argl, void* args)
     the initialization of the PCB.
    */
   if(call != NULL) {
-    new_ptcb->tcb = spawn_thread(newproc,new_ptcb, start_main_thread);
+
+    TCB* tcb = spawn_thread(newproc, start_main_thread);
+    newproc->main_thread = tcb;
+    new_ptcb->tcb = tcb;
+    new_ptcb->refcount = 0;
+    new_ptcb->exited = 0;
+    new_ptcb->detached = 0;
+    new_ptcb->exit_cv  = COND_INIT;
+
+
+    rlnode_init(&new_ptcb->ptcb_list_node, new_ptcb);
+    rlist_push_back(& newproc->ptcb_list, &new_ptcb->ptcb_list_node);
+    newproc->thread_count +=1; 
+
+  
     wakeup(new_ptcb->tcb);
+  
   }
 
-  rlist_push_back(& newproc->ptcb_list, &new_ptcb->ptcb_node_list);
-  newproc->thread_count +=1;
   
 finish:
   return get_pid(newproc);
@@ -318,7 +333,6 @@ void sys_Exit(int exitval)
 {
 
   PCB *curproc = CURPROC;  /* cache for efficiency */
-  PTCB *curptcb = CURPTCB;
 
   /* First, store the exit status */
   curproc->exitval = exitval;
@@ -332,28 +346,6 @@ void sys_Exit(int exitval)
     while(sys_WaitChild(NOPROC,NULL)!=NOPROC);
 
   } else {
-
-    // Set exit value and status
-    curptcb->exited = 1;
-    curptcb->exitval = exitval;
-
-    // Move ptcb to exited list
-    assert(curptcb->exited == 1);
-    
-    rlnode* node = rlist_remove(&curptcb->ptcb_node_list);
-    rlist_push_front(& curproc->ptcb_list,node);
-
-    // Broadcast 
-    if (curptcb->detached == 0)
-    {
-      kernel_broadcast(& curptcb->joinned);
-    }
-
-    // wait all threads exit
-    while(!is_rlist_empty(& curproc->ptcb_list))
-    {
-      ; // to-do
-    }
 
     /* Reparent any children of the exiting process to the 
        initial task */
@@ -390,11 +382,6 @@ void sys_Exit(int exitval)
     free(curproc->args);
     curproc->args = NULL;
   }
-  if(curptcb->args)
-  {
-    free(curptcb->args);
-    curptcb->args = NULL;
-  }
 
   /* Clean up FIDT */
   for(int i=0;i<MAX_FILEID;i++) {
@@ -410,9 +397,13 @@ void sys_Exit(int exitval)
   /* Now, mark the process as exited. */
   curproc->pstate = ZOMBIE;
 
+  curproc->thread_count--;
+  
+
   /* Bye-bye cruel world */
   kernel_sleep(EXITED, SCHED_USER);
 }
+
 
 
 

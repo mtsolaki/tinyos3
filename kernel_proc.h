@@ -60,30 +60,29 @@ typedef struct process_control_block {
 
   FCB* FIDT[MAX_FILEID];  /**< @brief The fileid table of the process */
 
-  rlnode ptcb_list;
-  int thread_count;
+  rlnode ptcb_list; // header ptcb list
+  int thread_count; // posa threads exoun owner auto to pcb
 
 } PCB;
 
 typedef struct process_thread_control_block {
-  TCB* tcb;
+  TCB* tcb; // pointer to tcb
   
+  // thread elements
   Task task;
   int argl;
   void* args;
 
   int exitval;
-
+  // if (exited OR detached) != 0 den mporo na kano thread_join
   int exited;
   int detached;
+  // broadcasts when finished
   CondVar exit_cv;
-  
-  CondVar joinned;
-  CondVar exited_first;
-  
+  // posoi perimenoun to exitva;
   int refcount;
-
-  rlnode ptcb_node_list;
+  // node gia ptcb list
+  rlnode ptcb_list_node;
 
 } PTCB;
 /**
