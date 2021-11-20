@@ -1,4 +1,3 @@
-
 #include <assert.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -21,7 +20,6 @@
 
 /*
 	test_boot
-
 	Test that the boot function executes the boot task and returns.
  */
 
@@ -108,7 +106,6 @@ static void waitchild_error()
 	ASSERT(WaitChild(MAX_PROC, NULL)==NOPROC);
 	ASSERT(WaitChild(GetPid()+1, NULL)==NOPROC);
 }
-
 static int subprocess(int argl, void* args) 
 {
 	ASSERT(GetPid()!=1);
@@ -2592,6 +2589,3 @@ int main(int argc, char** argv)
 	register_test(&user_tests);
 	return run_program(argc, argv, &all_tests);
 }
-
-
-
