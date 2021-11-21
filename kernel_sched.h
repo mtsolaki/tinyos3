@@ -30,6 +30,8 @@
  *
  *****************************/
 
+#define PRIORITY_QUEUES 10
+#define YIELD_LIMIT 1000
 /** @brief Thread state. 
 
   A value of this type, together with a @c Thread_phase value, completely
@@ -116,6 +118,7 @@ typedef struct thread_control_block {
 	TimerDuration its; /**< @brief Initial time-slice for this thread */
 	TimerDuration rts; /**< @brief Remaining time-slice for this thread */
 
+  int priority;
 	enum SCHED_CAUSE curr_cause; /**< @brief The endcause for the current time-slice */
 	enum SCHED_CAUSE last_cause; /**< @brief The endcause for the last time-slice */
 
