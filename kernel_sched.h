@@ -31,7 +31,7 @@
  *****************************/
 
 #define PRIORITY_QUEUES 10
-#define YIELD_LIMIT 1000
+#define YIELD_LIMIT 100
 /** @brief Thread state. 
 
   A value of this type, together with a @c Thread_phase value, completely
