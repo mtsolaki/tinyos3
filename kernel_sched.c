@@ -486,6 +486,7 @@ void yield(enum SCHED_CAUSE cause)
 				rlist_push_front(&SCHED[i+1], tmp);
 			}
 		}
+		yield_count = 0 ;
 	}
 	/* Save the current TCB for the gain phase */
 	CURCORE.previous_thread = current;

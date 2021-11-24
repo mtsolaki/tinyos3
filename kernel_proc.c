@@ -221,6 +221,7 @@ Pid_t sys_Exec(Task call, int argl, void* args)
     new_ptcb->detached = 0;
     new_ptcb->exit_cv  = COND_INIT;
 
+    assert(new_ptcb->tcb != NULL);
 
     rlnode_init(&new_ptcb->ptcb_list_node, new_ptcb);
     rlist_push_back(& newproc->ptcb_list, &new_ptcb->ptcb_list_node);
@@ -341,6 +342,7 @@ void sys_Exit(int exitval)
 
   /* First, store the exit status */
   curproc->exitval = exitval;
+  PTCB* ptcb = cur_thread()->owner_ptcb;
 
   /* 
     Here, we must check that we are not the init task. 
@@ -403,6 +405,21 @@ void sys_Exit(int exitval)
   curproc->pstate = ZOMBIE;
 
   curproc->thread_count--;
+
+  if(cur_thread() == curproc->main_thread)
+  {
+    ptcb->exited = 1;
+    ptcb->exitval = exitval;
+    kernel_broadcast(& ptcb->exit_cv); //broadcast gia wake up oswn perimenoun
+
+    ptcb->refcount--;
+    if(ptcb->refcount == 0)
+    {
+      rlist_remove(& ptcb->ptcb_list_node);
+      free(ptcb);
+    }
+
+  }
   
 
   /* Bye-bye cruel world */
