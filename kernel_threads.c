@@ -82,7 +82,7 @@ int sys_ThreadJoin(Tid_t tid, int* exitval)
   PTCB* ptcb = (PTCB*)tid;
   rlnode* i = rlist_find(&CURPROC->ptcb_list, ptcb, NULL);
   //no thread with this tid  - join itself - detached 
-  if( ptcb ==NULL || i == NULL)
+  if( ptcb ==NULL || i == NULL || CURPROC->thread_count == 1)
   {
     return -1;
   }

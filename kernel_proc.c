@@ -214,6 +214,7 @@ Pid_t sys_Exec(Task call, int argl, void* args)
   if(call != NULL) {
 
     TCB* tcb = spawn_thread(newproc, start_main_thread);
+    tcb->owner_ptcb = new_ptcb;
     newproc->main_thread = tcb;
     new_ptcb->tcb = tcb;
     new_ptcb->refcount = 0;
