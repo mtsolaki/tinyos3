@@ -4,6 +4,20 @@
 #include "kernel_cc.h"
 #include "kernel_sched.h"
 
+static file_ops writeOperations = {
+  //.Open = serial_open,
+  .Read = NULL,
+  .Write = pipe_write,
+  .Close = pipe_writer_close
+};
+
+static file_ops readOperations = {
+  //.Open = serial_open,
+  .Read = pipe_read,
+  .Write = NULL,
+  .Close = pipe_reader_close
+};
+
 Pipe_CB* pipe_init() {
 
     Pipe_CB* new_pipe_cb = xmalloc(sizeof(Pipe_CB)); /* Space allocation of the new pipe control block */    
@@ -38,8 +52,8 @@ int sys_Pipe(pipe_t* pipe)
 		Pipe_CB* new_pipe_cb = pipe_init();
 
 		/* Return read and write fid */
-		pipe_cb->read = fid[0]; 
-		pipe_cb->write = fid[1];
+		new_pipe_cb->reader = fid[0]; 
+		new_pipe_cb->writer = fid[1];
 
 		/* Set streams to point to the pipe_cb objects */
 		fcb[0]->streamobj = new_pipe_cb;
@@ -70,7 +84,7 @@ int pipe_write(void* pipecb_t, const char *buf, unsigned int n){
 	    /* If writer wrote all buffer and reader is sleeping
         until new data is read from the pipe, to free space */
         while(pipe_cb->write_data == (int)PIPE_BUFFER_SIZE)
-            kernel_wait(&pipe_CB->has_space,SCHED_PIPE);
+            kernel_wait(&pipe_cb->has_space,SCHED_PIPE);
 
         /* When writer pointer reaches end of buffer, cycle to the beginning */
         if(pipe_cb->w_position == ((int)PIPE_BUFFER_SIZE - 1)){
@@ -94,8 +108,8 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 
 	while(buffer_counter < n){ /* No data to Read */
 
-        while(pipe_CB->write_data==0){
-            if(pipe_CB->writer == NULL)
+        while(pipe_cb->write_data==0){
+            if(pipe_cb->writer == NULL)
                 /*  In case there is no more data stored and writer is closed,
                     return how much data has already been read.
                     If writer was already closed when pipe_read() was called
@@ -103,9 +117,9 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
                 */
                 return buffer_counter;
             /* if we expect someone to write, sleep till then*/
-            kernel_wait(&pipe_CB->has_data, SCHED_PIPE);
+            kernel_wait(&pipe_cb->has_data, SCHED_PIPE);
         }
-
+	}
 	for (int i = 0; i < buffer_counter; i++){
 		buf[i]=pipe_cb->buffer[pipe_cb->r_position]; 
 		pipe_cb->r_position++;
@@ -113,12 +127,12 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 		//pipa
 
 		/* When reader pointer reaches end of buffer, cycle to the beginning (Bounded Buffer) */
-        if(pipe_CB->r_position == ((int)PIPE_BUFFER_SIZE - 1)){
-            pipe_CB->r_position = 0;
+        if(pipe_cb->r_position == ((int)PIPE_BUFFER_SIZE - 1)){
+            pipe_cb->r_position = 0;
         }
 
 		if(pipe_cb->read_data<PIPE_BUFFER_SIZE)
-		kernel_broadcast(&pipe->has_space);
+		kernel_broadcast(&pipe_cb->has_space);
 
 		buffer_counter++;
 	}
@@ -132,7 +146,7 @@ int pipe_writer_close(void* pipecb_t){
 	if(pipe_cb == NULL)
 		return -1; 
 
-	pipe_cb->writer = NULL
+	pipe_cb->writer = NULL;
 
 	kernel_broadcast(&pipe_cb->has_data); /* Wake up the reader */ 
 
@@ -142,13 +156,13 @@ int pipe_writer_close(void* pipecb_t){
 	return 0;
 }
 
-int pipe_reader_close(void* _pipecb){
+int pipe_reader_close(void* pipecb_t){
 	Pipe_CB* pipe_cb = (Pipe_CB*)pipecb_t;
 
 	if(pipe_cb == NULL)
 		return -1;
 
-	pipe_cb->reader = NULL
+	pipe_cb->reader = NULL;
 
 	kernel_broadcast(&pipe_cb->has_space); /* Wake up the writer */ 
 
@@ -159,17 +173,5 @@ int pipe_reader_close(void* _pipecb){
 
 }
 
-static file_ops writeOperations = {
-  //.Open = serial_open,
-  .Read = NULL,
-  .Write = pipe_write,
-  .Close = pipe_writer_close
-};
 
-static file_ops readOperations = {
-  //.Open = serial_open,
-  .Read = pipe_read,
-  .Write = NULL,
-  .Close = pipe_reader_close
-};
 
