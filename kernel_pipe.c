@@ -53,7 +53,7 @@ int sys_Pipe(pipe_t* pipe)
 }
 
 int pipe_write(void* pipecb_t, const char *buf, unsigned int n){
-	PipeCB* pipe_cb = (PipeCB*)pipecb_t;
+	Pipe_CB* pipe_cb = (Pipe_CB*)pipecb_t;
 
 	if(pipe_cb == NULL || pipe_cb->reader == NULL)
 		return -1;
@@ -85,7 +85,7 @@ int pipe_write(void* pipecb_t, const char *buf, unsigned int n){
 
 int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 	
-	PipeCB* pipe_cb = (PipeCB*)pipecb_t;
+	Pipe_CB* pipe_cb = (Pipe_CB*)pipecb_t;
 	if(pipe_cb == NULL || pipe_cb->writer == NULL)
 		return -1;
 
@@ -119,7 +119,7 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 
 		if(pipe_cb->read_data<PIPE_BUFFER_SIZE)
 		kernel_broadcast(&pipe->has_space);
-		
+
 		buffer_counter++;
 	}
   	return buffer_counter;
@@ -127,10 +127,10 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 }
 
 int pipe_writer_close(void* pipecb_t){
-	PipeCB* pipe_cb = (PipeCB*)pipecb_t;
+	Pipe_CB* pipe_cb = (Pipe_CB*)pipecb_t;
 
 	if(pipe_cb == NULL)
-		return -1;
+		return -1; 
 
 	pipe_cb->writer = NULL
 
@@ -143,7 +143,7 @@ int pipe_writer_close(void* pipecb_t){
 }
 
 int pipe_reader_close(void* _pipecb){
-	PipeCB* pipe_cb = (PipeCB*)pipecb_t;
+	Pipe_CB* pipe_cb = (Pipe_CB*)pipecb_t;
 
 	if(pipe_cb == NULL)
 		return -1;
