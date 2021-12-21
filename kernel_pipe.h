@@ -22,7 +22,7 @@ typedef struct pipe_control_block {
 
     char buffer[PIPE_BUFFER_SIZE]; /* Bounded (cyclic) byte buffer*/
 
-    int buffer_counter,write_data,read_data;
+    int word_length;
     
 } Pipe_CB;
 
