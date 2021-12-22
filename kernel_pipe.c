@@ -31,7 +31,7 @@ int pipe_write(void* pipecb_t, const char *buf, unsigned int n){
 		pipe_cb->buffer[pipe_cb->w_position] = buf[buffer_counter]; /* Store byte from our given buffer to the pipe_CB buffer */
 		pipe_cb->w_position++; 
 		pipe_cb->word_length++;
-		//piphs
+		
 
 	    /* If writer wrote all buffer and reader is sleeping
         until new data is read from the pipe, to free space */
@@ -77,7 +77,7 @@ int pipe_read(void* pipecb_t, char *buf, unsigned int n){
 		buf[buffer_counter]=pipe_cb->buffer[pipe_cb->r_position]; 
 		pipe_cb->r_position++;
 		pipe_cb->word_length--;
-		//pipa
+		
 
 		/* When reader pointer reaches end of buffer, cycle to the beginning (Bounded Buffer) */
         if(pipe_cb->r_position == ((int)PIPE_BUFFER_SIZE - 1)){

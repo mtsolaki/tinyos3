@@ -43,6 +43,7 @@ Tid_t sys_CreateThread(Task task, int argl, void* args)
     ptcb->detached = 0;
 
     ptcb->exitval = 0;
+    ptcb->refcount = 0;
     ptcb->exit_cv = COND_INIT;
 
     CURPROC->thread_count++;
