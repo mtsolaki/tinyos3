@@ -134,7 +134,10 @@ int sys_Pipe(pipe_t* pipe)
 
 	int status = FCB_reserve(2,fid,fcb);
 
-	if(status == 1){
+	if(status != 1){
+		return -1;
+	}
+
 		Pipe_CB* new_pipe_cb;
 		new_pipe_cb = (Pipe_CB*)xmalloc(sizeof(Pipe_CB)); /* Space allocation of the new pipe control block */
 
@@ -164,7 +167,7 @@ int sys_Pipe(pipe_t* pipe)
 		/* Set the functions for read/write */
     	fcb[0]->streamfunc = &readOperations;
     	fcb[1]->streamfunc = &writeOperations;
-	}
-	return 0;
+
+		return 0;
 }
 
