@@ -2207,7 +2207,7 @@ TEST_SUITE(socket_tests,
 	&test_accept_reusable,
 	&test_accept_fails_on_exhausted_fid,
 	&test_accept_unblocks_on_close,
-/*
+
 	&test_connect_fails_on_bad_fid,
 	&test_connect_fails_on_bad_socket,
 	&test_connect_fails_on_illegal_port,
@@ -2220,7 +2220,7 @@ TEST_SUITE(socket_tests,
 
 	&test_shudown_read,
 	&test_shudown_write,
-*/
+	
 	NULL
 };
 

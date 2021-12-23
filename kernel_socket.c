@@ -187,12 +187,72 @@ Fid_t sys_Accept(Fid_t lsock)
 
 int sys_Connect(Fid_t sock, port_t port, timeout_t timeout)
 {
-	return -1;
+	FCB* fcb = get_fcb(sock);
+
+	if(fcb == NULL || fcb->streamobj == NULL)
+		return -1;
+	
+	SCB* scb = fcb->streamobj;
+	if(port < 1 || port > MAX_PORT || scb->type != UNBOUND || PORT_MAP[port] == NULL || PORT_MAP[port]->type != LISTENER )
+		return -1;
+	
+	conn_req*  cr = (conn_req*)xmalloc(sizeof(conn_req));
+	cr->peer = scb;
+	cr->peer->refcount++;
+	cr->admitted=0;
+	cr->connected_cv = COND_INIT;
+
+	rlnode_init(&cr->queue_node, cr);
+
+	SCB* lis_scb = PORT_MAP[port];
+	rlist_push_back(&lis_scb->socket_union.listener->queue, &cr->queue_node);
+	kernel_signal(&lis_scb->socket_union.listener->req_available);
+
+	scb->refcount++;
+	kernel_timedwait(&(cr->connected_cv), SCHED_PIPE, timeout);
+	scb->refcount--;
+	
+	if (cr->admitted == 0 )
+		return -1;
+	
+	return 0;
+
+	
 }
 
 
 int sys_ShutDown(Fid_t sock, shutdown_mode how)
 {
-	return -1;
+	FCB* fcb = get_fcb(sock);
+	if(fcb == NULL || fcb->streamobj == NULL)
+		return -1;
+	
+	SCB* scb = fcb->streamobj;
+	if(scb == NULL || scb->type != PEER) 
+		return -1;
+	
+	switch (how){
+		//Shut down only reader
+		case SHUTDOWN_READ:
+			pipe_reader_close(scb->socket_union.peer->read_pipe);
+			scb->socket_union.peer->read_pipe = NULL;
+			break;
+		//Shut down only writer
+		case SHUTDOWN_WRITE:
+			pipe_writer_close(scb->socket_union.peer->write_pipe);
+			scb->socket_union.peer->write_pipe = NULL;
+			break;
+		//Shut down both, reader and writer
+		case SHUTDOWN_BOTH:
+			pipe_reader_close(scb->socket_union.peer->read_pipe);
+			scb->socket_union.peer->read_pipe = NULL;
+			pipe_writer_close(scb->socket_union.peer->write_pipe);
+			scb->socket_union.peer->write_pipe = NULL;
+			break;
+		default:
+			return -1;
+			break;
+	}
+	return 0;
 }
 
