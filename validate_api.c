@@ -1,3 +1,4 @@
+
 #include <assert.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -20,6 +21,7 @@
 
 /*
 	test_boot
+
 	Test that the boot function executes the boot task and returns.
  */
 
@@ -1457,8 +1459,8 @@ BOOT_TEST(test_pipe_fails_on_exhausted_fid,
 	pipe_t pipe;
 	for(uint i=0; i< (MAX_FILEID/2); i++ )
 		ASSERT(Pipe(&pipe)==0);
-	 for(uint i=0; i< (MAX_FILEID/2); i++ )
-		ASSERT(Pipe(&pipe)==-1); 	
+	for(uint i=0; i< (MAX_FILEID/2); i++ )
+		ASSERT(Pipe(&pipe)==-1);	
 	return 0;
 }
 
@@ -1762,7 +1764,7 @@ BOOT_TEST(test_listen_fails_on_occupied_port,
 	Fid_t f = Socket(100);
 	ASSERT(Listen(f)==0);
 	ASSERT(Listen(Socket(100))==-1);
-	Close(f);
+	ASSERT(Close(f) == 0);
 	ASSERT(Listen(Socket(100))==0);	
 	return 0;
 }
@@ -2205,7 +2207,7 @@ TEST_SUITE(socket_tests,
 	&test_accept_reusable,
 	&test_accept_fails_on_exhausted_fid,
 	&test_accept_unblocks_on_close,
-
+/*
 	&test_connect_fails_on_bad_fid,
 	&test_connect_fails_on_bad_socket,
 	&test_connect_fails_on_illegal_port,
@@ -2218,7 +2220,7 @@ TEST_SUITE(socket_tests,
 
 	&test_shudown_read,
 	&test_shudown_write,
-
+*/
 	NULL
 };
 
@@ -2608,3 +2610,6 @@ int main(int argc, char** argv)
 	register_test(&user_tests);
 	return run_program(argc, argv, &all_tests);
 }
+
+
+

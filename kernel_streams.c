@@ -5,6 +5,7 @@
 #include "kernel_streams.h"
 #include "kernel_sched.h"
 #include "kernel_proc.h"
+#include "kernel_socket.h"
 
 #define MAX_FILES MAX_PROC
 
@@ -203,7 +204,7 @@ int sys_Close(int fd)
     CURPROC->FIDT[fd] = NULL;
     retcode = FCB_decref(fcb);    
   }
-
+  
   return retcode;
 }
 
