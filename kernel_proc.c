@@ -427,11 +427,80 @@ void sys_Exit(int exitval)
   kernel_sleep(EXITED, SCHED_USER);
 }
 
+int info_read(void* this, char* buf, unsigned int size)
+{
+  procinfoCB* infoCB = (procinfoCB*) this;
+  
+  if(buf==NULL || infoCB==NULL)
+    return -1;
+  
+  PCB* pcb = &PT[infoCB->cursor];
+
+  if(pcb->pstate != FREE)
+  {
+    infoCB->curinfo.pid = get_pid(pcb);
+
+    if(pcb->parent==NULL)
+      infoCB->curinfo.ppid = NOPROC;
+    else
+      infoCB->curinfo.ppid = get_pid(pcb->parent);
+    if(pcb->pstate==ALIVE)
+      infoCB->curinfo.alive = 1;
+    else
+      infoCB->curinfo.alive = 0;
+   
+    infoCB->curinfo.thread_count = pcb->thread_count;
+    infoCB->curinfo.main_task = pcb->main_task;
+    infoCB->curinfo.argl = pcb->argl;
+    
+    if(pcb->args!=NULL)
+    {
+      int min = (pcb->argl > PROCINFO_MAX_ARGS_SIZE) ? PROCINFO_MAX_ARGS_SIZE : pcb->argl;
+      memcpy(infoCB->curinfo.args, pcb->args, min);
+    }
+
+    memcpy(buf,& infoCB->curinfo, size);
+
+    infoCB->cursor++;
+    return infoCB->cursor;
+  }
+  return 0;
+
+}
 
 
+int info_close(void* this)
+{
+   procinfoCB* infoCB = (procinfoCB *)this;
+
+  if(infoCB == NULL)
+    return -1;
+  
+  free(&infoCB->curinfo);
+  return 0;
+}
+
+static file_ops info_ops = {
+  .Open = NULL,
+  .Read = info_read,
+  .Write = NULL,
+  .Close = info_close
+};
 
 Fid_t sys_OpenInfo()
 {
-	return NOFILE;
+  FCB* fcb;
+  Fid_t fid;
+  if(!(FCB_reserve(1,&fid, &fcb)))
+	  return NOFILE;
+
+  procinfoCB* infoCB = xmalloc(sizeof(procinfoCB));
+  procinfo* pr_info = xmalloc(sizeof(procinfo));
+  infoCB->curinfo = *pr_info;
+  infoCB->cursor =0;
+  fcb->streamfunc = &info_ops;
+  fcb->streamobj = infoCB;
+  return fid;
 }
+
 
